@@ -15,6 +15,11 @@ client.on("messageCreate", async msg => {
     //console.log(msg);
     const command = msg.content.split(" ")[0].toLowerCase();
 
+    //hot dog
+    if(msg.content == "hot dog" && msg.author.username != "abcsoupbot"){
+      msg.channel.send("hot dog");
+    }
+
     switch(command){
         case "test":
             msg.reply("who am i");
