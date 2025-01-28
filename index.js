@@ -47,6 +47,27 @@ client.on("messageCreate", async msg => {
         case "!presenttense":
             getPartOfSpeech(msg);
             break;
+        case "!alright":
+            postAlright(msg);
+            break;
+        case "!sunshine":
+            postSunshine(msg);
+            break;
+        case "!pinus":
+            postPinus(msg);
+            break;
+        case "!wednesday":
+          postWednesday(msg);
+          break;
+        case "!jueves":
+          postJueves(msg);
+          break;
+        case "!treetime":
+          postTreeTime(msg);
+          break;
+        case "!vonsimon":
+          postVonSimon(msg);
+          break;
         default:
             break;
 
@@ -54,7 +75,16 @@ client.on("messageCreate", async msg => {
 });
 
 function postHotdog(msg){
-    let hotDogUrl = "http://www.redkid.net/generator/hotdog/newsign.php?line1=" + msg.author.username;
+    let args = msg.content.split(" ");
+    let hotDogUrl = "http://www.redkid.net/generator/hotdog/newsign.php?line1="
+    if(args.length > 1){
+        let words = msg.content.replace("!hotdog ", "");
+        words = words.replaceAll(" ", "+");
+        hotDogUrl = hotDogUrl + words;
+    }
+    else{
+        hotDogUrl = hotDogUrl + msg.author.username
+    }
     msg.channel.send(hotDogUrl);
 }
 
@@ -120,6 +150,33 @@ async function getRhyme(msg) {
     msg.channel.send(rhymeWord);
 }
 
+function postAlright(msg){
+  msg.channel.send("https://tenor.com/view/alright-buffet-gif-20748305");
+}
+
+function postSunshine(msg){
+  msg.channel.send("https://cdn.discordapp.com/attachments/818563872763674666/1219701513006481570/WalkinOnSunshine.mp4?ex=663fad0d&is=663e5b8d&hm=d9f9f4c54a7bea684ae77f280ac9f577305d51fbd99b390bef4955613016bb49&");
+}
+
+function postPinus(msg){
+  msg.channel.send("https://cdn.discordapp.com/attachments/823258416197533766/1238605400107122780/pinus.mov?ex=663fe4ab&is=663e932b&hm=d1a6ca0ead47a9cb3db1d3e94e7a7eb612d582c5df517e89a9a13c34f0d217e7&");
+}
+
+function postWednesday(msg){
+  msg.channel.send("https://cdn.discordapp.com/attachments/818563872763674666/1250451162549850233/wednesday.mp4?ex=666afce5&is=6669ab65&hm=f790b73661bbe0b835b751dcb524f1049ce2169c2e6c9ec0b2a6a1d544a5e59f&");
+}
+
+function postJueves(msg){
+  msg.channel.send("https://cdn.discordapp.com/attachments/641743928445632547/1250812377440452608/cachedVideo.mov?ex=667587cd&is=6674364d&hm=6b6971b01fff58376322787fd3a948fd64156a7104e0cda117c05a80e086bded&");
+}
+
+function postTreeTime(msg){
+  msg.channel.send("https://cdn.discordapp.com/attachments/818563872763674666/1329490626034663485/TREE_TIME.mp4?ex=678a8821&is=678936a1&hm=797704b6e69743956464e05e1de7e05d44a96c85f8c1fb009e87610baa0cbcbd&");
+}
+
+function postVonSimon(msg){
+  msg.channel.send("https://cdn.discordapp.com/attachments/918543015381962772/1332497108175028275/1e42eb7912a14ba285387d253062902c.mov?ex=679620e3&is=6794cf63&hm=2a93d045b95311679132f4f45ee42b120cefb8be490334516af762b5c0a28f61&");
+}
 client.login(process.env.BOT_TOKEN).catch(err => {
     console.error(err);
     process.exit();
