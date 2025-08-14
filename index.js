@@ -9,11 +9,30 @@ require('dotenv').config();
 const {RiTa} = require("rita");
 const thesaurus = require("thesaurus");
 const anagramSolver = require("anagram-solver");
+const storage = require('node-persist');
+let commandList = [];
+
+const start = async function(){
+    await storage.init({dir: 'storage'});
+
+    //load commands into memory on app start
+    let storedCommands = await storage.getItem("storedCommands");
+    if (typeof storedCommands != 'undefined'){
+        commandList = storedCommands;
+    }
+}
+start();
 
 //listen for messages
 client.on("messageCreate", async msg => {
+
+    //ignore messages from bots, including self
+    if (msg.author.bot) return;
+
     //console.log(msg);
     const command = msg.content.split(" ")[0].toLowerCase();
+
+    checkForCommand(msg, command);
 
     //hot dog
     if(msg.content == "hot dog" && msg.author.username != "abcsoupbot"){
@@ -21,8 +40,8 @@ client.on("messageCreate", async msg => {
     }
 
     switch(command){
-        case "test":
-            msg.reply("who am i");
+        case "!helpme":
+            postHelp(msg);
             break;
         case "!hotdog":
             postHotdog(msg);
@@ -47,27 +66,12 @@ client.on("messageCreate", async msg => {
         case "!presenttense":
             getPartOfSpeech(msg);
             break;
-        case "!alright":
-            postAlright(msg);
+        case "!addcommand":
+            if(userCanAddCommands(msg)) await addCommand(msg);
             break;
-        case "!sunshine":
-            postSunshine(msg);
+        case "!removecommand":
+            if(userCanAddCommands(msg)) await removeCommand(msg);
             break;
-        case "!pinus":
-            postPinus(msg);
-            break;
-        case "!wednesday":
-          postWednesday(msg);
-          break;
-        case "!jueves":
-          postJueves(msg);
-          break;
-        case "!treetime":
-          postTreeTime(msg);
-          break;
-        case "!vonsimon":
-          postVonSimon(msg);
-          break;
         default:
             break;
 
@@ -150,33 +154,92 @@ async function getRhyme(msg) {
     msg.channel.send(rhymeWord);
 }
 
-function postAlright(msg){
-  msg.channel.send("https://tenor.com/view/alright-buffet-gif-20748305");
+function postHelp(msg){
+    let response = '`!hotdog` - get a hot dog\n' +
+        '`!word` - get a random word\n' +
+        '`!rhyme [word]` - try to find a rhyme for a word\n' +
+        '`!anagram [word]` - try to get an anagram of a word\n' +
+        '`!adjective` `!adverb` `!noun` `!nouns` `!verb` `!verbed` `!pasttense` `!verbs` `!presenttense` - get a part of speech\n' +
+        '`!addcommand [command name] [command description] | [command text]` - add a command to the bot\n'+
+        '`!removecommand [command name]` - remove a command\n'
+        ;
+
+    //populate the rest of the help list from stored commands
+    commandList.forEach((command) => {
+        let newHelpLine = "`" + command.command + "` - " + command.description + "\n";
+        response = response + newHelpLine;
+    });
+    msg.channel.send(response);
 }
 
-function postSunshine(msg){
-  msg.channel.send("https://cdn.discordapp.com/attachments/818563872763674666/1219701513006481570/WalkinOnSunshine.mp4?ex=663fad0d&is=663e5b8d&hm=d9f9f4c54a7bea684ae77f280ac9f577305d51fbd99b390bef4955613016bb49&");
+async function addCommand(msg){
+    try{
+        if(!msg.content.includes("|")){
+            msg.reply("Sorry, I didn't understand that! Make sure your request is formatted in the form of:\n`!addcommand commmandName commandDescription | commandOutput`");
+            return;
+        }
+        let splitMessage = msg.content.split(" ");
+        let newCommand = splitMessage[1].toLowerCase();
+        if(newCommand.charAt(0) != '!'){
+            newCommand = "!" + newCommand;
+        }
+
+        //trim off commands to get just the text we need
+        splitMessage.shift();
+        splitMessage.shift();
+
+
+        let rejoinedText = splitMessage.join(" ");
+        let commandDescription = rejoinedText.split("|")[0];
+        let commandText = rejoinedText.split("|")[1];
+        let commandObject = {
+            command: newCommand,
+            description: commandDescription,
+            commandText: commandText
+        };
+
+        let commandExists = commandList.some(command => command.command == newCommand);
+        if(commandExists){
+            msg.reply("Command `" + newCommand + "` already exists.");
+        }
+        else{
+            commandList.push(commandObject);
+            await storage.setItem("storedCommands", commandList);
+            msg.reply("Command `" + newCommand + "` has been successfully added!");
+        }
+    }
+    catch(error){
+        msg.reply("I'm sorry, something went wrong trying to add a new command!");
+    }
 }
 
-function postPinus(msg){
-  msg.channel.send("https://cdn.discordapp.com/attachments/823258416197533766/1238605400107122780/pinus.mov?ex=663fe4ab&is=663e932b&hm=d1a6ca0ead47a9cb3db1d3e94e7a7eb612d582c5df517e89a9a13c34f0d217e7&");
+async function removeCommand(msg){
+    let commandToRemove = msg.content.split(" ")[1].toLowerCase();
+    if(commandToRemove.charAt(0) != '!'){
+        commandToRemove = "!" + commandToRemove;
+    }
+
+    console.log(commandToRemove);
+
+    let modifiedCommandList = commandList.filter(commandObj => commandObj.command != commandToRemove);
+    commandList = modifiedCommandList;
+
+    await storage.setItem("storedCommands", commandList);
+
+    msg.reply("Command " + commandToRemove +  " has been removed!");
 }
 
-function postWednesday(msg){
-  msg.channel.send("https://cdn.discordapp.com/attachments/818563872763674666/1250451162549850233/wednesday.mp4?ex=666afce5&is=6669ab65&hm=f790b73661bbe0b835b751dcb524f1049ce2169c2e6c9ec0b2a6a1d544a5e59f&");
+function checkForCommand(msg, command){
+    let commandObject = commandList.find(commandObj => commandObj.command == command);
+    if(commandObject){
+        msg.channel.send(commandObject.commandText);
+    }
 }
 
-function postJueves(msg){
-  msg.channel.send("https://cdn.discordapp.com/attachments/641743928445632547/1250812377440452608/cachedVideo.mov?ex=667587cd&is=6674364d&hm=6b6971b01fff58376322787fd3a948fd64156a7104e0cda117c05a80e086bded&");
+function userCanAddCommands(msg){
+    return msg.member.roles.cache.find(r => r.name === "Post-Mod Mod") || msg.member.roles.cache.find(r => r.name === "Command Adder")
 }
 
-function postTreeTime(msg){
-  msg.channel.send("https://cdn.discordapp.com/attachments/818563872763674666/1329490626034663485/TREE_TIME.mp4?ex=678a8821&is=678936a1&hm=797704b6e69743956464e05e1de7e05d44a96c85f8c1fb009e87610baa0cbcbd&");
-}
-
-function postVonSimon(msg){
-  msg.channel.send("https://cdn.discordapp.com/attachments/918543015381962772/1332497108175028275/1e42eb7912a14ba285387d253062902c.mov?ex=679620e3&is=6794cf63&hm=2a93d045b95311679132f4f45ee42b120cefb8be490334516af762b5c0a28f61&");
-}
 client.login(process.env.BOT_TOKEN).catch(err => {
     console.error(err);
     process.exit();
