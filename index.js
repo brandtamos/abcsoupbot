@@ -169,7 +169,14 @@ function postHelp(msg){
         let newHelpLine = "`" + command.command + "` - " + command.description + "\n";
         response = response + newHelpLine;
     });
-    msg.channel.send(response);
+
+    const chunkSize = 2000;
+
+    for(let i = 0; i < response.length; i+= chunkSize){
+        let chunk = response.slice(i, i + chunkSize);
+        msg.channel.send(chunk);
+    }
+    //msg.channel.send(response);
 }
 
 async function addCommand(msg){
